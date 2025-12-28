@@ -9,81 +9,106 @@ interface GridItem {
   fgColor: string;
 }
 
-const PALETTE = ["ffbe0b", "fb5607", "ff006e", "8338ec", "3a86ff"];
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-const getRandomLetter = () => {
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  return letters[Math.floor(Math.random() * letters.length)];
+const getRandomLetter = () => LETTERS[Math.floor(Math.random() * LETTERS.length)];
+
+const getRandomHexColor = () => {
+  const hex = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  return `#${hex}`;
 };
 
-const getPairFromPalette = () => {
-  const bgIdx = Math.floor(Math.random() * PALETTE.length);
-  let fgIdx = Math.floor(Math.random() * PALETTE.length);
+/**
+ * Calculates a high-contrast complementary color.
+ * For very dark or very light colors, simple inversion might yield low contrast.
+ * This version ensures a visible difference.
+ */
+const getComplementaryColor = (hex: string) => {
+  const color = hex.replace('#', '');
+  const r = parseInt(color.slice(0, 2), 16);
+  const g = parseInt(color.slice(2, 4), 16);
+  const b = parseInt(color.slice(4, 6), 16);
   
-  // Ensure background and foreground are different
-  while (fgIdx === bgIdx) {
-    fgIdx = Math.floor(Math.random() * PALETTE.length);
+  // Basic inversion
+  let compR = 255 - r;
+  let compG = 255 - g;
+  let compB = 255 - b;
+
+  // Boost contrast if the result is too "gray" or close to the original
+  const brightnessOriginal = (r * 299 + g * 587 + b * 114) / 1000;
+  const brightnessComp = (compR * 299 + compG * 587 + compB * 114) / 1000;
+
+  if (Math.abs(brightnessOriginal - brightnessComp) < 50) {
+    if (brightnessOriginal > 128) {
+      compR = Math.max(0, r - 150);
+      compG = Math.max(0, g - 150);
+      compB = Math.max(0, b - 150);
+    } else {
+      compR = Math.min(255, r + 150);
+      compG = Math.min(255, g + 150);
+      compB = Math.min(255, b + 150);
+    }
   }
   
-  return {
-    bgColor: `#${PALETTE[bgIdx]}`,
-    fgColor: `#${PALETTE[fgIdx]}`
-  };
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(compR)}${toHex(compG)}${toHex(compB)}`;
 };
 
 const ChromaGrid: React.FC = () => {
   const [items, setItems] = useState<GridItem[]>([]);
-  const [cellSize, setCellSize] = useState(100); // Increased from 30 to 100
+  const [gridConfig, setGridConfig] = useState({ cols: 0, rows: 0, cellSize: 150 });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const generateGrid = useCallback(() => {
+  const calculateGrid = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const cols = Math.ceil(width / cellSize);
+    
+    // We want relatively large squares, approx 150px
+    const targetSize = 160;
+    const cols = Math.ceil(width / targetSize);
+    const cellSize = width / cols;
     const rows = Math.ceil(height / cellSize);
-    const total = cols * rows;
+    
+    setGridConfig({ cols, rows, cellSize });
 
+    const total = cols * rows;
     const newItems: GridItem[] = Array.from({ length: total }, (_, i) => {
-      const { bgColor, fgColor } = getPairFromPalette();
+      const bgColor = getRandomHexColor();
       return {
         id: `${i}-${Math.random()}`,
         letter: getRandomLetter(),
         bgColor,
-        fgColor,
+        fgColor: getComplementaryColor(bgColor),
       };
     });
     setItems(newItems);
-  }, [cellSize]);
+  }, []);
 
   useEffect(() => {
-    generateGrid();
-    window.addEventListener('resize', generateGrid);
-    return () => window.removeEventListener('resize', generateGrid);
-  }, [generateGrid]);
+    calculateGrid();
+    window.addEventListener('resize', calculateGrid);
+    return () => window.removeEventListener('resize', calculateGrid);
+  }, [calculateGrid]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
+      document.documentElement.requestFullscreen().catch(() => {});
       setIsFullscreen(true);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
   const handleCellClick = (index: number) => {
     setItems(prev => {
       const next = [...prev];
-      const { bgColor, fgColor } = getPairFromPalette();
+      const bgColor = getRandomHexColor();
       next[index] = {
         ...next[index],
         letter: getRandomLetter(),
         bgColor,
-        fgColor,
+        fgColor: getComplementaryColor(bgColor),
       };
       return next;
     });
@@ -91,12 +116,11 @@ const ChromaGrid: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
-      {/* Grid Container */}
       <div 
         className="grid w-full h-full"
         style={{
-          gridTemplateColumns: `repeat(auto-fill, minmax(${cellSize}px, 1fr))`,
-          gridAutoRows: `${cellSize}px`
+          gridTemplateColumns: `repeat(${gridConfig.cols}, 1fr)`,
+          gridAutoRows: `${gridConfig.cellSize}px`
         }}
       >
         {items.map((item, idx) => (
@@ -110,10 +134,11 @@ const ChromaGrid: React.FC = () => {
             }}
           >
             <span 
-              className="letter-text font-normal leading-none pointer-events-none"
+              className="letter-text font-extrabold uppercase"
               style={{ 
-                fontSize: `${cellSize * 0.85}px`,
-                fontFamily: "'Gloria Hallelujah', cursive"
+                // FontSize slightly smaller than cell size to "nearly fill" it
+                fontSize: `${gridConfig.cellSize * 0.9}px`,
+                fontFamily: "'JetBrains Mono', monospace"
               }}
             >
               {item.letter}
@@ -122,21 +147,18 @@ const ChromaGrid: React.FC = () => {
         ))}
       </div>
 
-      {/* Floating Controls - High z-index to stay above letters */}
-      <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
         <button
-          onClick={generateGrid}
-          className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-white/20 transition-all shadow-2xl group"
-          title="Regenerate All"
+          onClick={calculateGrid}
+          className="p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-white/20 active:scale-90 transition-all shadow-2xl"
         >
-          <RefreshCw size={24} className="group-active:rotate-180 transition-transform duration-500" />
+          <RefreshCw size={28} />
         </button>
         <button
           onClick={toggleFullscreen}
-          className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-white/20 transition-all shadow-2xl"
-          title="Toggle Fullscreen"
+          className="p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-white/20 active:scale-90 transition-all shadow-2xl"
         >
-          {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+          {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
         </button>
       </div>
     </div>
