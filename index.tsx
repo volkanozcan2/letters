@@ -10,59 +10,30 @@ interface GridItem {
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const PALETTE = ["#ffbe0b", "#fb5607", "#ff006e", "#8338ec", "#3a86ff"];
 
 const getRandomLetter = () => LETTERS[Math.floor(Math.random() * LETTERS.length)];
 
-const getRandomHexColor = () => {
-  const hex = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-  return `#${hex}`;
-};
-
-/**
- * Calculates a high-contrast complementary color.
- */
-const getComplementaryColor = (hex: string) => {
-  const color = hex.replace('#', '');
-  const r = parseInt(color.slice(0, 2), 16);
-  const g = parseInt(color.slice(2, 4), 16);
-  const b = parseInt(color.slice(4, 6), 16);
-  
-  // Basic inversion
-  let compR = 255 - r;
-  let compG = 255 - g;
-  let compB = 255 - b;
-
-  // Boost contrast if the result is too similar to the original brightness
-  const brightnessOriginal = (r * 299 + g * 587 + b * 114) / 1000;
-  const brightnessComp = (compR * 299 + compG * 587 + compB * 114) / 1000;
-
-  if (Math.abs(brightnessOriginal - brightnessComp) < 60) {
-    if (brightnessOriginal > 128) {
-      compR = Math.max(0, r - 160);
-      compG = Math.max(0, g - 160);
-      compB = Math.max(0, b - 160);
-    } else {
-      compR = Math.min(255, r + 160);
-      compG = Math.min(255, g + 160);
-      compB = Math.min(255, b + 160);
-    }
+const getUniqueColors = () => {
+  const bgIndex = Math.floor(Math.random() * PALETTE.length);
+  let fgIndex = Math.floor(Math.random() * PALETTE.length);
+  while (fgIndex === bgIndex) {
+    fgIndex = Math.floor(Math.random() * PALETTE.length);
   }
-  
-  const toHex = (n: number) => n.toString(16).padStart(2, '0');
-  return `#${toHex(compR)}${toHex(compG)}${toHex(compB)}`;
+  return { bgColor: PALETTE[bgIndex], fgColor: PALETTE[fgIndex] };
 };
 
 const ChromaGrid: React.FC = () => {
   const [items, setItems] = useState<GridItem[]>([]);
-  const [gridConfig, setGridConfig] = useState({ cols: 0, rows: 0, cellSize: 150 });
+  const [gridConfig, setGridConfig] = useState({ cols: 0, rows: 0, cellSize: 100 });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const calculateGrid = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
     
-    // Size aiming for around 150-180px
-    const targetSize = 160;
+    // Smaller target size for cells
+    const targetSize = 110; 
     const cols = Math.ceil(width / targetSize);
     const cellSize = width / cols;
     const rows = Math.ceil(height / cellSize);
@@ -71,12 +42,12 @@ const ChromaGrid: React.FC = () => {
 
     const total = cols * rows;
     const newItems: GridItem[] = Array.from({ length: total }, (_, i) => {
-      const bgColor = getRandomHexColor();
+      const { bgColor, fgColor } = getUniqueColors();
       return {
         id: `${i}-${Math.random()}`,
         letter: getRandomLetter(),
         bgColor,
-        fgColor: getComplementaryColor(bgColor),
+        fgColor,
       };
     });
     setItems(newItems);
@@ -93,27 +64,29 @@ const ChromaGrid: React.FC = () => {
       document.documentElement.requestFullscreen().catch(() => {});
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
     }
   };
 
   const handleCellClick = (index: number) => {
     setItems(prev => {
       const next = [...prev];
-      const bgColor = getRandomHexColor();
+      const { bgColor, fgColor } = getUniqueColors();
       next[index] = {
         ...next[index],
         letter: getRandomLetter(),
         bgColor,
-        fgColor: getComplementaryColor(bgColor),
+        fgColor,
       };
       return next;
     });
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black select-none font-mono">
+    <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
       <div 
         className="grid w-full h-full"
         style={{
@@ -125,18 +98,18 @@ const ChromaGrid: React.FC = () => {
           <div
             key={item.id}
             onClick={() => handleCellClick(idx)}
-            className="letter-cell flex items-center justify-center cursor-pointer overflow-hidden"
+            className="letter-cell flex items-center justify-center cursor-pointer overflow-hidden border border-black/10 hover:z-10"
             style={{ 
               backgroundColor: item.bgColor,
               color: item.fgColor,
             }}
           >
             <span 
-              className="letter-text font-extrabold uppercase leading-none"
+              className="letter-text font-bold uppercase leading-none"
               style={{ 
-                // Large font size to "nearly fill" the square
-                fontSize: `${gridConfig.cellSize * 0.95}px`,
-                fontFamily: "'JetBrains Mono', monospace"
+                // Letters made smaller as requested
+                fontSize: `${gridConfig.cellSize * 0.7}px`,
+                fontFamily: "'Gloria Hallelujah', cursive"
               }}
             >
               {item.letter}
@@ -145,20 +118,20 @@ const ChromaGrid: React.FC = () => {
         ))}
       </div>
 
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
         <button
           onClick={calculateGrid}
-          className="p-4 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-black/60 active:scale-90 transition-all shadow-2xl"
-          aria-label="Regenerate grid"
+          className="p-3 bg-black/30 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-black/50 active:scale-90 transition-all shadow-xl"
+          aria-label="Shuffle grid"
         >
-          <RefreshCw size={28} />
+          <RefreshCw size={24} />
         </button>
         <button
           onClick={toggleFullscreen}
-          className="p-4 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-black/60 active:scale-90 transition-all shadow-2xl"
+          className="p-3 bg-black/30 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-black/50 active:scale-90 transition-all shadow-xl"
           aria-label="Toggle fullscreen"
         >
-          {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
+          {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
         </button>
       </div>
     </div>

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChromaGrid</title>
+    <title>ChromaGrid - Gloria</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -17,13 +17,19 @@
             cursor: crosshair;
         }
         .letter-cell {
-            transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
         .letter-text {
             user-select: none;
             line-height: 1;
             display: block;
             text-align: center;
+            transition: text-shadow 0.3s ease, transform 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .letter-cell:hover .letter-text {
+            text-shadow: 6px 6px 12px rgba(0,0,0,0.6);
+            transform: scale(1.1) rotate(2deg);
         }
         /* Hide scrollbars */
         ::-webkit-scrollbar {
