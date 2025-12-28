@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromaGrid Letters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Gloria Hallelujah', cursive;
+        }
+        .letter-cell {
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+        .letter-cell:hover {
+            z-index: 10;
+        }
+        .letter-text {
+            transition: text-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        .letter-cell:hover .letter-text {
+            text-shadow: 0px 0px 15px rgba(255, 255, 255, 0.5), 4px 4px 10px rgba(0, 0, 0, 0.6);
+            transform: translateY(-3px);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.0"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
