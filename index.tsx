@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RefreshCw, Maximize, Minimize } from 'lucide-react';
 
@@ -20,8 +20,6 @@ const getRandomHexColor = () => {
 
 /**
  * Calculates a high-contrast complementary color.
- * For very dark or very light colors, simple inversion might yield low contrast.
- * This version ensures a visible difference.
  */
 const getComplementaryColor = (hex: string) => {
   const color = hex.replace('#', '');
@@ -34,19 +32,19 @@ const getComplementaryColor = (hex: string) => {
   let compG = 255 - g;
   let compB = 255 - b;
 
-  // Boost contrast if the result is too "gray" or close to the original
+  // Boost contrast if the result is too similar to the original brightness
   const brightnessOriginal = (r * 299 + g * 587 + b * 114) / 1000;
   const brightnessComp = (compR * 299 + compG * 587 + compB * 114) / 1000;
 
-  if (Math.abs(brightnessOriginal - brightnessComp) < 50) {
+  if (Math.abs(brightnessOriginal - brightnessComp) < 60) {
     if (brightnessOriginal > 128) {
-      compR = Math.max(0, r - 150);
-      compG = Math.max(0, g - 150);
-      compB = Math.max(0, b - 150);
+      compR = Math.max(0, r - 160);
+      compG = Math.max(0, g - 160);
+      compB = Math.max(0, b - 160);
     } else {
-      compR = Math.min(255, r + 150);
-      compG = Math.min(255, g + 150);
-      compB = Math.min(255, b + 150);
+      compR = Math.min(255, r + 160);
+      compG = Math.min(255, g + 160);
+      compB = Math.min(255, b + 160);
     }
   }
   
@@ -63,7 +61,7 @@ const ChromaGrid: React.FC = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
     
-    // We want relatively large squares, approx 150px
+    // Size aiming for around 150-180px
     const targetSize = 160;
     const cols = Math.ceil(width / targetSize);
     const cellSize = width / cols;
@@ -115,7 +113,7 @@ const ChromaGrid: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
+    <div className="relative w-screen h-screen overflow-hidden bg-black select-none font-mono">
       <div 
         className="grid w-full h-full"
         style={{
@@ -127,17 +125,17 @@ const ChromaGrid: React.FC = () => {
           <div
             key={item.id}
             onClick={() => handleCellClick(idx)}
-            className="letter-cell flex items-center justify-center cursor-pointer overflow-hidden border border-black/5"
+            className="letter-cell flex items-center justify-center cursor-pointer overflow-hidden"
             style={{ 
               backgroundColor: item.bgColor,
               color: item.fgColor,
             }}
           >
             <span 
-              className="letter-text font-extrabold uppercase"
+              className="letter-text font-extrabold uppercase leading-none"
               style={{ 
-                // FontSize slightly smaller than cell size to "nearly fill" it
-                fontSize: `${gridConfig.cellSize * 0.9}px`,
+                // Large font size to "nearly fill" the square
+                fontSize: `${gridConfig.cellSize * 0.95}px`,
                 fontFamily: "'JetBrains Mono', monospace"
               }}
             >
@@ -150,13 +148,15 @@ const ChromaGrid: React.FC = () => {
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
         <button
           onClick={calculateGrid}
-          className="p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-white/20 active:scale-90 transition-all shadow-2xl"
+          className="p-4 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-black/60 active:scale-90 transition-all shadow-2xl"
+          aria-label="Regenerate grid"
         >
           <RefreshCw size={28} />
         </button>
         <button
           onClick={toggleFullscreen}
-          className="p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-white/20 active:scale-90 transition-all shadow-2xl"
+          className="p-4 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white hover:bg-black/60 active:scale-90 transition-all shadow-2xl"
+          aria-label="Toggle fullscreen"
         >
           {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
         </button>
